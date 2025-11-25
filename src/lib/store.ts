@@ -177,11 +177,32 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     updateRoasPoint: (day, value) => {
-        set((state) => ({
-            roasCurve: state.roasCurve.map((p) =>
-                p.day === day ? { ...p, value } : p
-            )
-        }));
+        set((state) => {
+            const index = state.roasCurve.findIndex(p => p.day === day);
+            if (index === -1) return state;
+
+            const newCurve = [...state.roasCurve];
+
+            // 1. Lower Bound Constraint: Cannot be lower than previous day
+            const prevValue = index > 0 ? newCurve[index - 1].value : 0;
+            let newValue = Math.max(value, prevValue);
+
+            // Update the target point
+            newCurve[index] = { ...newCurve[index], value: newValue };
+
+            // 2. Forward Propagation: Push subsequent days up if needed
+            for (let i = index + 1; i < newCurve.length; i++) {
+                if (newCurve[i].value < newValue) {
+                    newCurve[i] = { ...newCurve[i], value: newValue };
+                } else {
+                    // Optimization: If the next point is already higher, we can stop
+                    // because the rest of the curve is already monotonic (assuming it was valid before)
+                    break;
+                }
+            }
+
+            return { roasCurve: newCurve };
+        });
     },
 
     setSmoothingMethod: (method) => {

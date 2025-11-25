@@ -46,7 +46,7 @@ export function ROASBuilder() {
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="number"
-                                            value={point.value.toFixed(1)}
+                                            value={point.value}
                                             onChange={(e) => updateRoasPoint(point.day, parseFloat(e.target.value))}
                                             className="w-20 bg-[#27272a] text-white text-right rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-[#6366f1]"
                                             step="0.1"
