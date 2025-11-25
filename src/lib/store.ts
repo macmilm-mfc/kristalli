@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Campaign, DailyBucket } from './models';
+import { Campaign, DailyBucket, RoasPoint, SmoothingMethod } from './models';
 import { generateDailyBuckets } from './engine';
 import { addDays, format } from 'date-fns';
 
@@ -12,6 +12,8 @@ interface AppState {
         message: string;
         type: 'success' | 'error' | 'info';
     };
+    roasCurve: RoasPoint[];
+    smoothingMethod: SmoothingMethod;
     addCampaign: (campaign: Campaign) => void;
     updateCampaign: (id: string, updates: Partial<Campaign>) => void;
     removeCampaign: (id: string) => void;
@@ -22,7 +24,22 @@ interface AppState {
     loadScenario: () => void;
     showToast: (message: string, type: 'success' | 'error' | 'info') => void;
     hideToast: () => void;
+    updateRoasPoint: (day: number, value: number) => void;
+    setSmoothingMethod: (method: SmoothingMethod) => void;
 }
+
+const DEFAULT_ROAS_CURVE: RoasPoint[] = [
+    { day: 1, value: 30 },
+    { day: 7, value: 50 },
+    { day: 14, value: 65 },
+    { day: 30, value: 80 },
+    { day: 60, value: 100 },
+    { day: 90, value: 120 },
+    { day: 180, value: 150 },
+    { day: 270, value: 170 },
+    { day: 360, value: 185 },
+    { day: 720, value: 200 },
+];
 
 const INITIAL_CAMPAIGNS: Campaign[] = [
     {
@@ -58,6 +75,8 @@ export const useStore = create<AppState>((set, get) => ({
         message: '',
         type: 'info'
     },
+    roasCurve: DEFAULT_ROAS_CURVE,
+    smoothingMethod: 'monotone',
 
     addCampaign: (campaign) => {
         set((state) => {
@@ -155,5 +174,17 @@ export const useStore = create<AppState>((set, get) => ({
                 visible: false
             }
         }));
+    },
+
+    updateRoasPoint: (day, value) => {
+        set((state) => ({
+            roasCurve: state.roasCurve.map((p) =>
+                p.day === day ? { ...p, value } : p
+            )
+        }));
+    },
+
+    setSmoothingMethod: (method) => {
+        set({ smoothingMethod: method });
     }
 }));

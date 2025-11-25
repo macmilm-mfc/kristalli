@@ -48,3 +48,10 @@ export interface Scenario {
     name: string;
     campaigns: Campaign[];
 }
+
+export interface RoasPoint {
+    day: number;
+    value: number; // Percentage, e.g., 100 = 100%
+}
+
+export type SmoothingMethod = 'linear' | 'catmull' | 'monotone';

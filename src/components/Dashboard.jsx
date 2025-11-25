@@ -6,6 +6,7 @@ import { Tabs } from './Tabs';
 import { CampaignPlanner } from './CampaignPlanner';
 import { AnalyticsView } from './AnalyticsView';
 import { DataView } from './DataView';
+import { ROASBuilder } from './ROASBuilder';
 
 export function Dashboard() {
     const { buckets, selectCampaign, selectedCampaignId, saveScenario, loadScenario } = useStore();
@@ -24,6 +25,7 @@ export function Dashboard() {
 
     const tabs = [
         { id: 'planner', label: 'Campaign Planner' },
+        { id: 'roas', label: 'ROAS Builder' },
         { id: 'analytics', label: 'Analytics Graph' },
         { id: 'data', label: 'Raw Data' },
     ];
@@ -88,6 +90,7 @@ export function Dashboard() {
 
                 <div className="mt-6">
                     {activeTab === 'planner' && <CampaignPlanner />}
+                    {activeTab === 'roas' && <ROASBuilder />}
                     {activeTab === 'analytics' && <AnalyticsView />}
                     {activeTab === 'data' && <DataView />}
                 </div>
