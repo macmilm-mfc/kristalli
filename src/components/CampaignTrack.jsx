@@ -34,7 +34,10 @@ export function CampaignTrack({ campaign, startDate, onUpdate, onSelect }) {
                 backgroundColor: campaign.color,
                 color: '#fff',
                 top: 0,
-                minWidth: '40px', // Ensure visibility even for short campaigns
+                minWidth: '40px',
+                border: '2px solid white', // DEBUG: Make it very visible
+                zIndex: 100, // DEBUG: Ensure it's on top
+                position: 'absolute',
             }}
         >
             <div className="truncate font-semibold">

@@ -59,8 +59,14 @@ export function Timeline() {
                 {campaigns.map((campaign, index) => (
                     <div
                         key={campaign.id}
-                        className="absolute w-full"
-                        style={{ top: index * 60 }} // Stack vertically
+                        className="absolute"
+                        style={{
+                            top: index * 60,
+                            left: 0,
+                            right: 0,
+                            height: 60,
+                            position: 'absolute'
+                        }}
                     >
                         <CampaignTrack
                             campaign={campaign}
