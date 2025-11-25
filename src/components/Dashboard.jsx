@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useStore } from '../lib/store';
-import { Timeline } from './Timeline';
 import { CampaignEditor } from './CampaignEditor';
 import { Toast } from './Toast';
+import { Tabs } from './Tabs';
+import { CampaignPlanner } from './CampaignPlanner';
+import { AnalyticsView } from './AnalyticsView';
+import { DataView } from './DataView';
 
 export function Dashboard() {
     const { buckets, selectCampaign, selectedCampaignId, saveScenario, loadScenario } = useStore();
     const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('planner');
 
     // Open editor when a campaign is selected
     if (selectedCampaignId && !isEditorOpen) {
@@ -17,6 +21,12 @@ export function Dashboard() {
     const totalRevenue = buckets.reduce((sum, b) => sum + b.revenue.iap + b.revenue.ad, 0);
     const totalSpend = buckets.reduce((sum, b) => sum + b.costs.uaSpend, 0);
     const totalProfit = totalRevenue - totalSpend;
+
+    const tabs = [
+        { id: 'planner', label: 'Campaign Planner' },
+        { id: 'analytics', label: 'Analytics Graph' },
+        { id: 'data', label: 'Raw Data' },
+    ];
 
     return (
         <div className="container mx-auto py-8 space-y-8">
@@ -72,51 +82,17 @@ export function Dashboard() {
                 </div>
             </div>
 
-            {/* Timeline */}
-            <Timeline />
+            {/* Main Content Area */}
+            <div>
+                <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {/* Granular Grid View (Preview) */}
-            <div className="bg-[#1a1a1a] rounded-xl border border-[#27272a] overflow-hidden">
-                <div className="p-4 border-b border-[#27272a]">
-                    <h3 className="text-xl font-bold text-white">Daily P&L Buckets</h3>
-                </div>
-                <div className="overflow-x-auto max-h-[500px]">
-                    <table className="w-full text-left text-sm text-gray-400">
-                        <thead className="bg-[#27272a] text-gray-200 sticky top-0">
-                            <tr>
-                                <th className="p-3">Date</th>
-                                <th className="p-3">Installs</th>
-                                <th className="p-3">DAU</th>
-                                <th className="p-3">UA Spend</th>
-                                <th className="p-3">IAP Rev</th>
-                                <th className="p-3">Ad Rev</th>
-                                <th className="p-3">Total Rev</th>
-                                <th className="p-3">Profit</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#27272a]">
-                            {buckets.slice(0, 30).map((bucket) => {
-                                const totalRev = bucket.revenue.iap + bucket.revenue.ad;
-                                const profit = totalRev - bucket.costs.uaSpend;
-                                return (
-                                    <tr key={bucket.date} className="hover:bg-[#27272a]/50 transition-colors">
-                                        <td className="p-3 font-mono text-white">{bucket.date}</td>
-                                        <td className="p-3">{bucket.metrics.installs}</td>
-                                        <td className="p-3">{bucket.metrics.dau}</td>
-                                        <td className="p-3 text-red-400">${bucket.costs.uaSpend.toFixed(0)}</td>
-                                        <td className="p-3">${bucket.revenue.iap.toFixed(0)}</td>
-                                        <td className="p-3">${bucket.revenue.ad.toFixed(0)}</td>
-                                        <td className="p-3 text-emerald-400">${totalRev.toFixed(0)}</td>
-                                        <td className={`p-3 font-bold ${profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            ${profit.toFixed(0)}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                <div className="mt-6">
+                    {activeTab === 'planner' && <CampaignPlanner />}
+                    {activeTab === 'analytics' && <AnalyticsView />}
+                    {activeTab === 'data' && <DataView />}
                 </div>
             </div>
+
             {/* Campaign Editor Drawer */}
             {isEditorOpen && (
                 <CampaignEditor
