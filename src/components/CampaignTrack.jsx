@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 
 export function CampaignTrack({ campaign, startDate, onUpdate, onSelect }) {
@@ -11,38 +12,36 @@ export function CampaignTrack({ campaign, startDate, onUpdate, onSelect }) {
     // 1 day = 20px width
     const PIXELS_PER_DAY = 20;
 
-    const leftPos = startOffset * PIXELS_PER_DAY;
-    const widthPx = duration * PIXELS_PER_DAY;
-
-    // Debug logging
-    console.log('CampaignTrack render:', {
-        name: campaign.name,
-        startOffset,
-        duration,
-        leftPos,
-        widthPx,
-        color: campaign.color
-    });
-
     return (
-        <div
-            onClick={onSelect}
-            className="absolute h-12 rounded-lg flex items-center px-3 text-sm font-medium shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+        <motion.div
+            drag="x"
+            dragMomentum={false}
+            onDragEnd={(event, info) => {
+                const daysMoved = Math.round(info.offset.x / PIXELS_PER_DAY);
+                if (daysMoved !== 0) {
+                    onUpdate(daysMoved);
+                }
+            }}
+            onClick={(e) => {
+                // Prevent click when dragging
+                if (Math.abs(e.movementX) < 2) {
+                    onSelect();
+                }
+            }}
+            className="absolute h-12 rounded-lg flex items-center px-3 text-sm font-medium shadow-lg cursor-grab active:cursor-grabbing"
             style={{
-                left: `${leftPos}px`,
-                width: `${widthPx}px`,
+                left: startOffset * PIXELS_PER_DAY,
+                width: duration * PIXELS_PER_DAY,
                 backgroundColor: campaign.color,
                 color: '#fff',
-                top: 0,
-                minWidth: '40px',
-                border: '2px solid white', // DEBUG: Make it very visible
-                zIndex: 100, // DEBUG: Ensure it's on top
-                position: 'absolute',
+                top: 0
             }}
+            whileHover={{ scale: 1.02, zIndex: 10 }}
+            whileTap={{ scale: 0.98 }}
         >
-            <div className="truncate font-semibold">
+            <div className="truncate">
                 {campaign.name}
             </div>
-        </div>
+        </motion.div>
     );
 }
