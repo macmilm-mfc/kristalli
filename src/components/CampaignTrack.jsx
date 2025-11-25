@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 
 export function CampaignTrack({ campaign, startDate, onUpdate, onSelect }) {
@@ -12,36 +11,35 @@ export function CampaignTrack({ campaign, startDate, onUpdate, onSelect }) {
     // 1 day = 20px width
     const PIXELS_PER_DAY = 20;
 
+    const leftPos = startOffset * PIXELS_PER_DAY;
+    const widthPx = duration * PIXELS_PER_DAY;
+
+    // Debug logging
+    console.log('CampaignTrack render:', {
+        name: campaign.name,
+        startOffset,
+        duration,
+        leftPos,
+        widthPx,
+        color: campaign.color
+    });
+
     return (
-        <motion.div
-            drag="x"
-            dragMomentum={false}
-            onDragEnd={(event, info) => {
-                const daysMoved = Math.round(info.offset.x / PIXELS_PER_DAY);
-                if (daysMoved !== 0) {
-                    onUpdate(daysMoved);
-                }
-            }}
-            onClick={(e) => {
-                // Prevent click when dragging
-                if (Math.abs(e.movementX) < 2) {
-                    onSelect();
-                }
-            }}
-            className="absolute h-12 rounded-lg flex items-center px-3 text-sm font-medium shadow-lg cursor-grab active:cursor-grabbing"
+        <div
+            onClick={onSelect}
+            className="absolute h-12 rounded-lg flex items-center px-3 text-sm font-medium shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
             style={{
-                left: startOffset * PIXELS_PER_DAY,
-                width: duration * PIXELS_PER_DAY,
+                left: `${leftPos}px`,
+                width: `${widthPx}px`,
                 backgroundColor: campaign.color,
                 color: '#fff',
-                top: 0
+                top: 0,
+                minWidth: '40px', // Ensure visibility even for short campaigns
             }}
-            whileHover={{ scale: 1.02, zIndex: 10 }}
-            whileTap={{ scale: 0.98 }}
         >
-            <div className="truncate">
+            <div className="truncate font-semibold">
                 {campaign.name}
             </div>
-        </motion.div>
+        </div>
     );
 }
