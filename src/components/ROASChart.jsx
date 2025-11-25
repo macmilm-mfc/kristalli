@@ -1,9 +1,9 @@
-import { useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { getLinearPath, getCatmullRomPath, getMonotoneCubicPath } from '../lib/curveUtils';
 
 export function ROASChart({ points, smoothingMethod, onPointUpdate }) {
     const containerRef = useRef(null);
+    const [draggingId, setDraggingId] = useState(null);
 
     // Chart dimensions
     const width = 800;
@@ -12,17 +12,11 @@ export function ROASChart({ points, smoothingMethod, onPointUpdate }) {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    // Scales
-    // X-axis: We map the specific days to evenly spaced points or linear scale?
-    // The user said "These nodes will not be ay uniform points along teh X axis."
-    // But for the UI, if we use linear scale, D720 will be far away.
-    // Let's use a non-linear scale where each point gets equal width for better visibility of early days.
-    // Or maybe a log scale?
-    // "Each of the nodes starts at zero and we can drag it interactively"
-    // Let's stick to equal spacing for the nodes on the X axis for now to make them all accessible,
-    // but label them correctly. This is a common pattern in such tools.
+    const xScale = (index) => {
+        if (points.length <= 1) return 0;
+        return (index / (points.length - 1)) * chartWidth;
+    };
 
-    const xScale = (index) => (index / (points.length - 1)) * chartWidth;
     const yScale = (value) => chartHeight - (value / 200) * chartHeight; // 0-200% range
     const yToValue = (y) => ((chartHeight - y) / chartHeight) * 200;
 
@@ -38,12 +32,41 @@ export function ROASChart({ points, smoothingMethod, onPointUpdate }) {
         return getMonotoneCubicPath(chartPoints);
     }, [points, smoothingMethod]);
 
+    // Handle global pointer move/up when dragging
+    useEffect(() => {
+        if (draggingId === null) return;
+
+        const handlePointerMove = (e) => {
+            if (!containerRef.current) return;
+
+            const rect = containerRef.current.getBoundingClientRect();
+            const relativeY = e.clientY - rect.top - padding.top;
+
+            // Clamp to chart area
+            const clampedY = Math.max(0, Math.min(chartHeight, relativeY));
+            const newValue = yToValue(clampedY);
+
+            onPointUpdate(draggingId, Math.max(0, Math.min(200, newValue)));
+        };
+
+        const handlePointerUp = () => {
+            setDraggingId(null);
+        };
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+        };
+    }, [draggingId, chartHeight, onPointUpdate, padding.top, yToValue]);
+
     return (
         <div className="bg-[#1a1a1a] p-6 rounded-xl border border-[#27272a]">
             <div className="relative" style={{ width, height }}>
-                <svg width={width} height={height} className="overflow-visible">
+                <svg width={width} height={height} className="overflow-visible select-none">
                     {/* Grid Lines */}
-                    {/* Y-axis grid (0%, 50%, 100%, 150%, 200%) */}
                     {[0, 50, 100, 150, 200].map(val => (
                         <g key={val}>
                             <line
@@ -94,44 +117,34 @@ export function ROASChart({ points, smoothingMethod, onPointUpdate }) {
                 </svg>
 
                 {/* Draggable Nodes */}
-                {points.map((p, i) => (
-                    <motion.div
-                        key={p.day}
-                        drag="y"
-                        dragConstraints={{ top: 0, bottom: chartHeight }}
-                        dragElastic={0}
-                        dragMomentum={false}
-                        onDrag={(event, info) => {
-                            // Calculate new value based on Y position
-                            // We need to account for the container offset
-                            const rect = containerRef.current.getBoundingClientRect();
-                            const relativeY = info.point.y - rect.top - padding.top;
-
-                            // Clamp to chart area
-                            const clampedY = Math.max(0, Math.min(chartHeight, relativeY));
-                            const newValue = yToValue(clampedY);
-
-                            onPointUpdate(p.day, Math.max(0, Math.min(200, newValue)));
-                        }}
-                        className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-ns-resize border-2 border-[#6366f1] hover:scale-125 transition-transform"
-                        style={{
-                            left: padding.left + xScale(i) - 8, // Center the node
-                            top: padding.top + yScale(p.value) - 8,
-                        }}
-                    />
-                ))}
-
-                {/* Invisible container for drag reference */}
                 <div
                     ref={containerRef}
-                    className="absolute inset-0 pointer-events-none"
+                    className="absolute inset-0"
                     style={{
                         top: 0,
                         left: 0,
                         width,
-                        height
+                        height,
+                        pointerEvents: 'none' // Let events pass through to nodes, but used for rect reference
                     }}
-                />
+                >
+                    {points.map((p, i) => (
+                        <div
+                            key={p.day}
+                            onPointerDown={(e) => {
+                                e.preventDefault(); // Prevent text selection
+                                setDraggingId(p.day);
+                            }}
+                            className={`absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-ns-resize border-2 border-[#6366f1] transition-transform ${draggingId === p.day ? 'scale-125' : 'hover:scale-125'}`}
+                            style={{
+                                left: padding.left + xScale(i) - 8,
+                                top: padding.top + yScale(p.value) - 8,
+                                pointerEvents: 'auto', // Re-enable pointer events for nodes
+                                touchAction: 'none' // Prevent scrolling while dragging on touch devices
+                            }}
+                        />
+                    ))}
+                </div>
             </div>
         </div>
     );
